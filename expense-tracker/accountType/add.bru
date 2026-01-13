@@ -1,0 +1,22 @@
+meta {
+  name: add
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/accountType
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "accountType": "9"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

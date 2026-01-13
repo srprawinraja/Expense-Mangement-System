@@ -1,0 +1,22 @@
+meta {
+  name: add
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/amountType
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "amountType": "test1"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
