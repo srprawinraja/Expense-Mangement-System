@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
-    category: { type: String, required: true},
+    categoryName: { type: String, required: true},
     isIncome: { type: Boolean, required: true}
 }, { timestamps: true });
 
