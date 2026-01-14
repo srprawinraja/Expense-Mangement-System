@@ -14,14 +14,72 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-const records = await Record.find()
-  .populate('accountType')  
-  .populate('category');
+    const records = await Record.find()
+    .populate('accountType')  
+    .populate('category');
         res.status(200).json(records);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
+
+router.get('/date', async (req, res) => {
+    try {
+        const date = req.query.date
+        const page = req.query.page;
+        const limit = req.query.limit;
+        if(!date || !page || !limit){
+            res.status(400).json({ error: "missing date or page or limit" });
+        }
+        const skip = (page - 1) * limit;
+        const startDateTime = new Date(date);       
+        const endDateTime = new Date(date);          
+        endDateTime.setHours(23, 59, 59, 999); 
+        const filteredRecords = await Record.find({
+            dateAndTime: {
+                $gte: startDateTime,
+                $lte: endDateTime
+            }
+        })
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('accountType')  
+        .populate('category');
+
+        const records = []
+
+        for(const record of filteredRecords){
+            console.log(record.category);
+            records.push(
+                {
+                    "categoryName": record.category.categoryName,
+                    "isIncome": record.category.isIncome,
+                    "title": record.title,
+                    "accountTypeName": record.accountType.accountTypeName,
+                    "amount": record.amount
+                }
+            )
+        }
+
+        
+        const totalRecords = await (await Record.find()).length
+        const totalPages = Math.ceil(totalRecords / limit)
+
+         res.status(200).json(
+            {
+                "page": page,
+                "limit": limit,
+                "totalRecords": totalRecords,
+                "totalPages": totalPages,
+                "records":records
+            }
+        );
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 router.get('/month', async (req, res) => {
     try {
         const year = req.query.year
@@ -47,8 +105,7 @@ router.get('/month', async (req, res) => {
 
         let totalIncome=0, totalExpense=0
 
-        for(const index in records){
-            const record = records[index]
+        for(const record of records){
 
             const date = new Date(record.dateAndTime);
             const onlyDate = date.toISOString().split("T")[0];
