@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-
 const Record = require('../models/Record');
+const { getSignedUrlFromKey } = require('../utils/s3Upload');
 
 router.post('/', async (req, res) => {
     try {
@@ -14,10 +14,35 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
+    const id = req.query.id
+    
+    if(id){
+        
+        const record = await Record.findById(id)
+        .populate('accountType')  
+        .populate('category');
+        if(!record){
+            res.status(200).json({error: "no record found"});
+        }
+
+        for(const index in record.note.imgs){
+            const img = record.note.imgs[index]
+            record.note.imgs[index] = await getSignedUrlFromKey(img)
+        }
+        
+        
+        res.status(200).json(record);
+    }    
     const records = await Record.find()
     .populate('accountType')  
     .populate('category');
-        res.status(200).json(records);
+    for(const record of records){
+        for(const index in record.note.imgs){
+            const img = record.note.imgs[index]
+            record.note.imgs[index] = await getSignedUrlFromKey(img)
+        }
+    }
+    res.status(200).json(records);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -50,7 +75,6 @@ router.get('/date', async (req, res) => {
         const records = []
 
         for(const record of filteredRecords){
-            console.log(record.category);
             records.push(
                 {
                     "categoryName": record.category.categoryName,
@@ -109,10 +133,11 @@ router.get('/month', async (req, res) => {
 
             const date = new Date(record.dateAndTime);
             const onlyDate = date.toISOString().split("T")[0];
-
+            const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
             if(!map.has(onlyDate)){
                 map.set(onlyDate, {
                     date: onlyDate,
+                    dayName: dayName,
                     income: 0,
                     expense: 0,
                     total: 0
@@ -137,6 +162,7 @@ router.get('/month', async (req, res) => {
             dates.push(
                 {
                     date: date,
+                    dayName: detail.dayName,
                     income: detail.income,
                     expense: detail.expense,
                     total: detail.total,
