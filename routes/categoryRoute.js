@@ -15,7 +15,14 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        const categorys = await Category.find();
+        const isIncome = req.query.isIncome
+        if(isIncome){
+            const categorys = await Category.find({
+                isIncome: isIncome
+            });
+            res.status(200).json(categorys);
+        }
+        const categorys = await Category.find()
         res.status(200).json(categorys);
     } catch (err) {
         res.status(400).json({ error: err.message });

@@ -24,9 +24,8 @@ async function uploadToS3(buffer, filename, mimetype) {
 
   // Generate signed URL
   const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
-  const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
-  return { key, signedUrl };
+  return key;
 }
 async function getSignedUrlFromKey(key) {
   if (!key) throw new Error("Missing S3 key");

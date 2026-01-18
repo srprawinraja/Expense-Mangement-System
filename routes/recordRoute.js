@@ -17,31 +17,29 @@ router.get('/', async (req, res) => {
     const id = req.query.id
     
     if(id){
-        
         const record = await Record.findById(id)
         .populate('accountType')  
         .populate('category');
         if(!record){
             res.status(200).json({error: "no record found"});
         }
+        record.note = {
+            content: record.note.content,
+            keys : record.note.keys,
+            urls: await Promise.all(
+                record.note.keys.map(key => getSignedUrlFromKey(key))
+            )
+        };
 
-        for(const index in record.note.imgs){
-            const img = record.note.imgs[index]
-            record.note.imgs[index] = await getSignedUrlFromKey(img)
-        }
-        
+    
         
         res.status(200).json(record);
     }    
     const records = await Record.find()
     .populate('accountType')  
     .populate('category');
-    for(const record of records){
-        for(const index in record.note.imgs){
-            const img = record.note.imgs[index]
-            record.note.imgs[index] = await getSignedUrlFromKey(img)
-        }
-    }
+
+
     res.status(200).json(records);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -59,9 +57,9 @@ router.get('/date', async (req, res) => {
         const skip = (page - 1) * limit;
         const startDateTime = new Date(date);       
         const endDateTime = new Date(date);          
-        endDateTime.setHours(23, 59, 59, 999); 
+        
         const filteredRecords = await Record.find({
-            dateAndTime: {
+            date: {
                 $gte: startDateTime,
                 $lte: endDateTime
             }
@@ -77,6 +75,7 @@ router.get('/date', async (req, res) => {
         for(const record of filteredRecords){
             records.push(
                 {
+                    "id":record.id,
                     "categoryName": record.category.categoryName,
                     "isIncome": record.category.isIncome,
                     "title": record.title,
@@ -100,6 +99,7 @@ router.get('/date', async (req, res) => {
             }
         );
     } catch (err) {
+        console.log("error is "+err)
         res.status(400).json({ error: err.message });
     }
 });
@@ -112,15 +112,16 @@ router.get('/month', async (req, res) => {
             res.status(400).json({ error: "missing year or month query" });
         }
         const startDate = new Date(year, month - 1, 1); 
-        const endDate = new Date(year, month, 1);       
+        const endDate = new Date(year, month, 1);  
+        
 
         const records = await Record.find({
-        dateAndTime: {
+        date: {
             $gte: startDate,
             $lt: endDate
         }
         })
-        .sort({ dateAndTime: 1 })
+        .sort({ date: 1 })
         .populate('accountType')  
         .populate('category');
         
@@ -131,7 +132,7 @@ router.get('/month', async (req, res) => {
 
         for(const record of records){
 
-            const date = new Date(record.dateAndTime);
+            const date = new Date(record.date);
             const onlyDate = date.toISOString().split("T")[0];
             const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
             if(!map.has(onlyDate)){
@@ -186,11 +187,52 @@ router.get('/month', async (req, res) => {
 
 router.delete('/', async (req, res) => {
     try {
-        const record = await Record.deleteMany();
-        res.status(200).json(record);
+        const { id } = req.query;
+
+        let result;
+        if (id) {
+            // Delete a single record by id
+            result = await Record.findByIdAndDelete(id);
+            if (!result) {
+                return res.status(404).json({ error: 'Record not found' });
+            }
+        } else {
+            // Delete all records
+            result = await Record.deleteMany();
+        }
+
+        res.status(200).json({ success: true, data: result });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
+
+router.patch('/', async (req, res) => {
+    try {
+        const { id } = req.query;
+        const updates = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: 'Record id is required' });
+        }
+
+        const result = await Record.findByIdAndUpdate(
+            id,
+            { $set: updates },
+            { new: true, runValidators: true }
+        );
+
+        if (!result) {
+            return res.status(404).json({ error: 'Record not found' });
+        }
+
+        res.status(200).json({ success: true, data: result });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+
+
 
 module.exports = router;
