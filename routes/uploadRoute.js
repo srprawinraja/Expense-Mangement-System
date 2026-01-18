@@ -17,13 +17,13 @@ router.post("/", upload.array("files"), async (req, res) => {
     }
 
     // Upload all files in parallel to S3
-    const urls = await Promise.all(
+    const keys = await Promise.all(
       files.map(file =>
         uploadToS3(file.buffer, file.originalname, file.mimetype)
       )
     );
 
-    res.json({ urls }); // return array of file URLs
+    res.json({ keys }); // return array of file URLs
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ error: "Upload failed" });

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Note = require('./Note');
 
 const recordSchema = new mongoose.Schema({
-    date: { type: String, required: true },
+    date: { type: Date, required: true },
     amount: { type: Number, required: true },
     category: { 
         type: mongoose.Schema.Types.ObjectId, 
