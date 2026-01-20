@@ -75,7 +75,7 @@ router.get('/date', async (req, res) => {
         for(const record of filteredRecords){
             records.push(
                 {
-                    "id":record.id,
+                    "id": record.id,
                     "categoryName": record.category.categoryName,
                     "isIncome": record.category.isIncome,
                     "title": record.title,
@@ -131,7 +131,6 @@ router.get('/month', async (req, res) => {
         let totalIncome=0, totalExpense=0
 
         for(const record of records){
-
             const date = new Date(record.date);
             const onlyDate = date.toISOString().split("T")[0];
             const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
@@ -191,13 +190,11 @@ router.delete('/', async (req, res) => {
 
         let result;
         if (id) {
-            // Delete a single record by id
             result = await Record.findByIdAndDelete(id);
             if (!result) {
                 return res.status(404).json({ error: 'Record not found' });
             }
         } else {
-            // Delete all records
             result = await Record.deleteMany();
         }
 
@@ -219,7 +216,7 @@ router.patch('/', async (req, res) => {
         const result = await Record.findByIdAndUpdate(
             id,
             { $set: updates },
-            { new: true, runValidators: true }
+            { new: true, runValidators: true }  // new returns updated and run validator check schema
         );
 
         if (!result) {
